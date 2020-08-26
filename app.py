@@ -25,8 +25,6 @@ def evaluate():
     #temp
     cwd = os.getcwd()
     data = str(eval_manifest)
-    with open(os.path.join(cwd,"eval_manifest_recieved.txt"), 'w') as temp:
-        temp.write(data) 
     
     eval_response_manifest = {"manifest":[]}
     
@@ -48,16 +46,15 @@ def evaluate():
         
         if file_type_acceptable:
             useableness = 2
-        # elif file_type_useable:
-        #     useableness = 1
+        elif file_type_useable:
+            useableness = 1
         else:
             useableness = 0
         
         eval_response_manifest["manifest"].append({
             "filename": file_name,
             "requirement": useableness})
-    with open(os.path.join(cwd,"eval_manifest_response.txt"), 'w') as temp:
-        temp.write(str(eval_response_manifest))   
+        
     return jsonify(eval_response_manifest)
 
 
@@ -65,9 +62,6 @@ def evaluate():
 def run():
 
     cwd = os.getcwd()
-    
-    with open(os.path.join(cwd,"run_recieved.txt"), 'w') as temp:
-        temp.write("run endpoint run")
     
     zip_path_in = os.path.join(cwd, "To_zip")
     zip_path_out = os.path.join(cwd, "Zip")
@@ -90,9 +84,6 @@ def run():
     
     #initiate response manifest
     run_response_manifest = {"results":[]}
-    
-    with open(os.path.join(cwd,"run_recieved_man.txt"), 'w') as temp:
-        temp.write(str(run_manifest))
     
     for file in files:
         try:
