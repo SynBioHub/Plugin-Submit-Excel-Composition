@@ -153,7 +153,7 @@ def run():
     #clear To_zip directory
     shutil.rmtree(zip_path_in, ignore_errors=True)
     
-    return send_file(f"{zip_path_out}.zip")
+    send_file(f"{zip_path_out}.zip")
     
     #delete zip file
     os.remove(f"{zip_path_out}.zip")
