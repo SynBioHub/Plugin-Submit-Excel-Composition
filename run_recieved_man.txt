@@ -1,1 +1,0 @@
-{'manifest': {'files': [{'url': 'http://localhost:5001/public/darpa_template.xlsx', 'filename': 'darpa_template.xlsx', 'type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}]}}
