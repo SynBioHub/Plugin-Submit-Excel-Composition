@@ -1,0 +1,1 @@
+{'manifest': [{'filename': 'file_name0.xls', 'requirement': 2}, {'filename': 'file_name1.xml', 'requirement': 0}, {'filename': 'file_name2.xml', 'requirement': 0}, {'filename': 'file_name3.xml', 'requirement': 0}, {'filename': 'file_name4.xml', 'requirement': 0}, {'filename': 'file_name5.xml', 'requirement': 0}, {'filename': 'file_name6.xml', 'requirement': 0}]}
