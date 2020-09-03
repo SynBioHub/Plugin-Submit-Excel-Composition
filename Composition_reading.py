@@ -23,6 +23,34 @@ import re
 
 def quality_check_metadata(filled_composition_metadata, blank_composition_metadata, 
                            use_cols = [0, 1], nrows = 8):
+    """
+    the function verifies that the filled metadata does not vary from the metadata template
+
+    Parameters
+    ----------
+    filled_composition_metadata : DATAFRAME
+        Dataframe containing the metadata
+    blank_composition_metadata : DATAFRAME
+        Dataframe containing the template metadata
+    use_cols: LIST, default = [0, 1]
+        Defines which columns should be read for the metadata section (note column A is 0)
+    nrows: INTEGER, default = 8
+        Defines number of rows to be read for the metadata section
+    
+    Returns
+    -------
+    NONE
+     
+    Example
+    -------
+    cwd = os.path.dirname(os.path.abspath("__file__")) #get current working directory
+    path_filled = os.path.join(cwd, "darpa_template.xlsx")
+    path_blank = os.path.join(cwd, "templates/darpa_template_blank.xlsx")
+    filled_metadata = pd.read_excel (path_filled)
+    blank_metadata = pd.read_excel (path_blank)
+    quality_check_metadata(filled_metadata, blank_metadata, 
+                           use_cols = [0, 1], nrows = 8)
+    """
     comparison = np.where((filled_composition_metadata == blank_composition_metadata)|(blank_composition_metadata.isna()), True, False)
     excel_cell_names = []
     for column in range(0, len(use_cols)):
@@ -42,7 +70,27 @@ def quality_check_metadata(filled_composition_metadata, blank_composition_metada
     return()
 
 def load_libraries(table):
+    """
+    the function extracts the libraries from the filled template table
+
+    Parameters
+    ----------
+    table : DATAFRAME
+        Dataframe containing the filled template starting with the libraries
     
+    Returns
+    -------
+    libraries : DICT
+        Dictionary containing the libraries, the keys are the library abbreviations and the
+        corresponding value is the url, if no abbreviation is used, the url is used for both key and value
+     
+    Example
+    -------
+    cwd = os.path.dirname(os.path.abspath("__file__")) #get current working directory
+    path_filled = os.path.join(cwd, "darpa_template.xlsx")
+    table = pd.read_excel (path_filled)
+    libraries = load_libraries(table)
+    """
     libraries = dict()
     if table.iloc[0][0] == "Libraries" and table.iloc[0][1] == "Abbreviations":
         for index, row in table.iloc[1:len(table)].iterrows():
@@ -54,10 +102,40 @@ def load_libraries(table):
                     libraries[table.iloc[index][1]] = table.iloc[index][0]
                 else:
                     libraries[table.iloc[index][0]] = table.iloc[index][0]
+    else:
+        logging.error("""The template was altered by removing the library section. 
+                      This means no parts can be loaded and no SBOL can be created.""")
     return(libraries)
 
 def get_data(table, labels = np.array(["Collection Name:", "Name:", "Description:", "Strain (optional)",
               "Integration Locus (optional)", "Part Sequence:"])):
+    """
+    the function extracts the collection information contained in the filled template
+
+    Parameters
+    ----------
+    table : DATAFRAME
+        Dataframe containing the filled template starting with the libraries
+    labels : ARRAY, default = np.array(["Collection Name:", "Name:", "Description:", "Strain (optional)",
+              "Integration Locus (optional)", "Part Sequence:"])
+        Array containing the headers used in each composition block in the template
+    
+    Returns
+    -------
+    compositions : DICT
+        Nested dictionary containing the collection names and the corresponding values are the names of
+        the composite design which are also dictionary containing the design descriptions and an as of yet
+        empty parts dictionary
+    list_of_rows : LIST
+        list of the rows where each block starts and the number of columns that are filled in 
+     
+    Example
+    -------
+    cwd = os.path.dirname(os.path.abspath("__file__")) #get current working directory
+    path_filled = os.path.join(cwd, "darpa_template.xlsx")
+    table = pd.read_excel (path_filled)
+    compositions, list_of_rows = get_data(table)
+    """
     compositions = dict()
     list_of_rows = []
 
@@ -98,6 +176,37 @@ def get_data(table, labels = np.array(["Collection Name:", "Name:", "Description
     return(compositions, list_of_rows)
 
 def get_parts(list_of_rows, table, compositions):
+    """
+    the function extracts the parts contained in the filled template and adds them to the compositions dictionary
+
+    Parameters
+    ----------
+    list_of_rows : LIST
+        list of the rows where each block starts and the number of columns that are filled in
+    table : DATAFRAME
+        Dataframe containing the filled template starting with the libraries
+    compositions : DICT
+        Nested dictionary containing the collection names and the corresponding values are the names of
+        the composite design which are also dictionary containing the design descriptions and an as of yet
+        empty parts dictionary
+    
+    Returns
+    -------
+    compositions : DICT
+        Nested dictionary containing the collection names and the corresponding values are the names of
+        the composite design which are also dictionary containing the design descriptions and a newly filled
+        dictionary of parts
+    all_parts : SET
+        A set containing all parts that are used in the filled template
+     
+    Example
+    -------
+    cwd = os.path.dirname(os.path.abspath("__file__")) #get current working directory
+    path_filled = os.path.join(cwd, "darpa_template.xlsx")
+    table = pd.read_excel (path_filled)
+    compositions, list_of_rows = get_data(table)
+    compositions, all_parts = get_parts(list_of_rows, table, compositions)
+    """
     
     all_parts = []
     len_list_of_rows = len(list_of_rows)
@@ -138,7 +247,34 @@ def get_parts(list_of_rows, table, compositions):
             logging.error("None of the collections contain any parts and no SBOL can be created")
     return(compositions, all_parts)
 
-def name_check(compositions):
+def check_name(compositions):
+    """
+    the function verifies that the collection names are alphanumeric and separated by underscores
+    if that is not the case the special characters are replaced by their unicode decimal code number
+
+    Parameters
+    ----------
+    compositions : DICT
+        Nested dictionary containing the collection names and the corresponding values are the names of
+        the composite design which are also dictionary containing the design descriptions and a
+        dictionary of parts
+    
+    Returns
+    -------
+    compositions : DICT
+        Nested dictionary containing the corrected collection names if that was necessary and the 
+        corresponding values are the names of the composite design which are also dictionary containing 
+        the design descriptions and a dictionary of parts
+     
+    Example
+    -------
+    cwd = os.path.dirname(os.path.abspath("__file__")) #get current working directory
+    path_filled = os.path.join(cwd, "darpa_template.xlsx")
+    table = pd.read_excel (path_filled)
+    compositions, list_of_rows = get_data(table)
+    compositions, all_parts = get_parts(list_of_rows, table, compositions)
+    compositions = check_name(compositions)
+    """
     
     for key in compositions:
         old = key #for error warning
@@ -165,6 +301,37 @@ def name_check(compositions):
     return(compositions)
 
 def write_sbol_comp(libraries, compositions, all_parts):
+    """
+    the function pulls the parts from their SynBioHub libraries and compiles them into an SBOL document
+
+    Parameters
+    ----------
+    libraries : DICT
+        Dictionary containing the libraries, the keys are the library abbreviations and the
+        corresponding value is the url, if no abbreviation is used, the url is used for both key and value
+    compositions : DICT
+        Nested dictionary containing the collection names and the corresponding values are the names of
+        the composite design which are also dictionary containing the design descriptions and a
+        dictionary of parts
+    all_parts : SET
+        A set containing all parts that are used in the filled template
+        
+    Returns
+    -------
+    doc: SBOL Document
+        Document containing all components and sequences
+     
+    Example
+    -------
+    cwd = os.path.dirname(os.path.abspath("__file__")) #get current working directory
+    path_filled = os.path.join(cwd, "darpa_template.xlsx")
+    table = pd.read_excel (path_filled)
+    compositions, list_of_rows = get_data(table)
+    compositions, all_parts = get_parts(list_of_rows, table, compositions)
+    compositions = check_name(compositions)
+    doc = write_sbol_comp(libraries, compositions)
+    """  
+    
     doc = Document()
     sbol2.Config.setOption('sbol_typed_uris', False)
     
@@ -229,7 +396,7 @@ def fix_msec_sbol(file_path):
 # compositions, all_parts = get_parts(list_of_rows, table, compositions)
 
 # #Check if Collection names are alphanumeric and separated by underscore
-# compositions = name_check(compositions)
+# compositions = check_name(compositions)
 
 # #Create sbol
 # doc = write_sbol_comp(libraries, compositions)

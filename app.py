@@ -2,7 +2,7 @@ from flask import Flask, request, abort, send_file, jsonify
 import os, shutil
 import pandas as pd
 from Composition_reading import quality_check_metadata, load_libraries
-from Composition_reading import get_data, get_parts, name_check, write_sbol_comp, fix_msec_sbol
+from Composition_reading import get_data, get_parts, check_name, write_sbol_comp, fix_msec_sbol
 from sbol2 import *
 #import all functions from .py files
 
@@ -124,7 +124,7 @@ def run():
             compositions, all_parts = get_parts(list_of_rows, table, compositions)
             
             #Check if Collection names are alphanumeric and separated by underscore
-            compositions = name_check(compositions)
+            compositions = check_name(compositions)
             
             #Create sbol
             doc = write_sbol_comp(libraries, compositions, all_parts)
