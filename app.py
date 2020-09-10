@@ -1,10 +1,9 @@
 from flask import Flask, request, abort, send_file, jsonify
-import os, shutil
+import os, shutil, tempfile, io
 import pandas as pd
 from Composition_reading import quality_check_metadata, load_libraries
 from Composition_reading import get_data, get_parts, check_name, write_sbol_comp, fix_msec_sbol
 from sbol2 import *
-#import all functions from .py files
 
 app = Flask(__name__)
 
@@ -63,17 +62,9 @@ def run():
 
     cwd = os.getcwd()
     
-    zip_path_in = os.path.join(cwd, "To_zip")
-    zip_path_out = os.path.join(cwd, "Zip")
-    
-    #remove to zip directory if it exists
-    try:
-        shutil.rmtree(zip_path_in, ignore_errors=True)
-    except:
-        print("No To_zip exists currently")
-        
-    #make to zip directory
-    os.makedirs(zip_path_in)
+    #create a temporary directory
+    temp_dir = tempfile.TemporaryDirectory()
+    zip_in_dir_name = temp_dir.name
     
     #take in run manifest
     run_manifest = request.get_json(force=True)
@@ -85,15 +76,15 @@ def run():
     #initiate response manifest
     run_response_manifest = {"results":[]}
     
-    for file in files:
+    for a_file in files:
         try:
-            file_name = file['filename']
-            file_type = file['type']
-            file_url = file['url']
-            data = str(file)
+            file_name = a_file['filename']
+            file_type = a_file['type']
+            file_url = a_file['url']
+            data = str(a_file)
            
             converted_file_name = f"{file_name}.converted"
-            file_path_out = os.path.join(zip_path_in, converted_file_name)
+            file_path_out = os.path.join(zip_in_dir_name, converted_file_name)
         
             ########## REPLACE THIS SECTION WITH OWN RUN CODE #################
             #Load Data
@@ -101,6 +92,7 @@ def run():
             sheet_name = "Composite Parts"
             nrows = 8
             use_cols = [0,1]
+            
             #read in whole composite sheet below metadata
             table = pd.read_excel (file_url, sheet_name = sheet_name, 
                                    header = None, skiprows = startrow_composition)
@@ -126,12 +118,14 @@ def run():
             #Check if Collection names are alphanumeric and separated by underscore
             compositions = check_name(compositions)
             
+            
             #Create sbol
             doc = write_sbol_comp(libraries, compositions, all_parts)
             doc.write(file_path_out)
             
-            #fix millisecond bug in pysbol/sbol
-            fix_msec_sbol(file_path_out)
+            
+            # #fix millisecond bug in pysbol/sbol
+            # fix_msec_sbol(file_path_out)
             ################## END SECTION ####################################
         
             # add name of converted file to manifest
@@ -143,17 +137,19 @@ def run():
             abort(415)
             
     #create manifest file
-    file_path_out = os.path.join(zip_path_in, "manifest.json")
+    file_path_out = os.path.join(zip_in_dir_name, "manifest.json")
     with open(file_path_out, 'w') as manifest_file:
             manifest_file.write(str(run_response_manifest)) 
+      
+    
+    with tempfile.NamedTemporaryFile() as temp_file:
+        #create zip file of converted files and manifest
+        shutil.make_archive(temp_file.name, 'zip', zip_in_dir_name)
         
-    #create zip file of converted files and manifest
-    shutil.make_archive(zip_path_out, 'zip', zip_path_in)
-    
-    #clear To_zip directory
-    shutil.rmtree(zip_path_in, ignore_errors=True)
-    
-    send_file(f"{zip_path_out}.zip")
-    
-    #delete zip file
-    os.remove(f"{zip_path_out}.zip")
+        #delete zip in directory
+        shutil.rmtree(zip_in_dir_name)
+        
+        #return zip file
+        return send_file(f"{temp_file.name}.zip")
+            
+
