@@ -124,8 +124,8 @@ def run():
             doc.write(file_path_out)
             
             
-            # #fix millisecond bug in pysbol/sbol
-            # fix_msec_sbol(file_path_out)
+            #fix millisecond bug in pysbol/sbol
+            fix_msec_sbol(file_path_out)
             ################## END SECTION ####################################
         
             # add name of converted file to manifest
