@@ -12,7 +12,7 @@ import os
 import logging
 from col_to_excel import col_to_excel
 import sbol2
-from sbol2 import Document
+from sbol2 import Document, Collection
 import re
 
 # cwd = os.path.dirname(os.path.abspath("__file__")) #get current working directory
@@ -345,6 +345,8 @@ def write_sbol_comp(libraries, compositions, all_parts):
     
     
     for collection in compositions:
+        coll = Collection(collection) #create collections
+        doc.addCollection(coll)
         for design in compositions[collection]:
             composite_design = doc.componentDefinitions.create(design)
             composite_design.assemblePrimaryStructure(compositions[collection][design]["Parts"])
@@ -353,6 +355,8 @@ def write_sbol_comp(libraries, compositions, all_parts):
     
             if type(compositions[collection][design]["Description"]) is str:
                 composite_design.description = compositions[collection][design]["Description"]
+            
+            coll.members += [composite_design.identity] #add designs to respective collections
     return(doc)
 
 def fix_msec_sbol(file_path):
