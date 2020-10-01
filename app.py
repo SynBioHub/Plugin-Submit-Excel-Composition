@@ -1,8 +1,8 @@
 from flask import Flask, request, abort, send_file, jsonify
 import os, shutil, tempfile, io
 import pandas as pd
-from Composition_reading import quality_check_metadata, load_libraries
-from Composition_reading import get_data, get_parts, check_name, write_sbol_comp, fix_msec_sbol
+from excel2sbol.functions import quality_check_metadata, load_libraries
+from excel2sbol.functions import get_data, get_parts, check_name, write_sbol_comp, fix_msec_sbol
 from sbol2 import *
 
 app = Flask(__name__)
